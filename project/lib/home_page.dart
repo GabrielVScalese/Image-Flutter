@@ -15,7 +15,7 @@ class _HomePageState extends State<HomePage> {
   var isVisible = false;
   var icPicBytes;
 
-  _openGalery() async {
+  _openGallery() async {
     var picture =
         // ignore: invalid_use_of_visible_for_testing_member
         await ImagePicker.platform.pickImage(source: ImageSource.gallery);
