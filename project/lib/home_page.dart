@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   _uploadImage(picBytes) async {
-    var clientID = '2f7307ddc860abf';
+    var clientID = ''; // your client id
     var jsonData = json.encode({'image': picBytes});
 
     var response = await http.post(
