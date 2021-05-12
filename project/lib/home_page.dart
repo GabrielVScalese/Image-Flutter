@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,24 +12,29 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  var imageLink = 'Generated link: ';
-  var isVisible = false;
-  var icPicBytes;
+  var picBytes;
+  var imgFile;
+  var img64;
 
+  // Open gallery and convert image
   _openGallery() async {
-    var picture =
-        // ignore: invalid_use_of_visible_for_testing_member
-        await ImagePicker.platform.pickImage(source: ImageSource.gallery);
+    try {
+      var imgPicker = ImagePicker();
+      var pickedFile = await imgPicker.getImage(source: ImageSource.gallery);
 
-    List imageBytes = await picture.readAsBytes();
-    icPicBytes = base64Encode(imageBytes);
-    return icPicBytes;
+      setState(() {
+        imgFile = File(pickedFile.path);
+      });
+
+      var bytes = await pickedFile.readAsBytes();
+      img64 = base64Encode(bytes);
+    } catch (error) {}
   }
 
-  _uploadImage(picBytes) async {
+  // Upload image
+  _uploadImage(img64) async {
     var clientID = ''; // your client id
-    var jsonData = json.encode({'image': picBytes});
-
+    var jsonData = json.encode({'image': img64});
     var response = await http.post(
         Uri.parse(
           'https://api.imgur.com/3/image',
@@ -43,6 +49,21 @@ class _HomePageState extends State<HomePage> {
     return map['data']['link'];
   }
 
+  Widget _decideView() {
+    if (imgFile == null)
+      return Container(
+        child: Text('No image'),
+        margin: EdgeInsets.only(bottom: 10, top: 70),
+      );
+    else
+      return Container(
+        child: Image.file(imgFile),
+        width: 300,
+        height: 300,
+        margin: EdgeInsets.only(bottom: 10, top: 70),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,29 +76,14 @@ class _HomePageState extends State<HomePage> {
           alignment: Alignment.topCenter,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Visibility(
-                visible: isVisible,
-                child: Container(
-                  alignment: Alignment.topCenter,
-                  margin: EdgeInsets.only(bottom: 20),
-                  child: Text(
-                    imageLink,
-                    style: TextStyle(fontSize: 17),
-                  ),
-                ),
-              ),
+              _decideView(),
               Container(
                 child: ElevatedButton(
                   onPressed: () async {
-                    isVisible = false;
-                    var picBytes = await _openGalery();
-                    imageLink = await _uploadImage(picBytes);
-                    setState(() {
-                      isVisible = true;
-                      print(imageLink);
-                    });
+                    await _openGallery();
+                    var link = await _uploadImage(img64);
+                    print(link);
                   },
                   child: Text('Upload image'),
                 ),
